@@ -1,0 +1,13 @@
+name: First WorkFlow
+
+on: push
+
+jobs:
+  shell-commands:
+    runs-on: ubuntu-latest
+    steps:
+      - name: first step
+        run: echo "This is out first step"
+
+      - name: "Second Step"
+        run: echo "This is second step"
