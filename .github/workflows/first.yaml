@@ -59,7 +59,7 @@ jobs:
           zip -r app.zip . # Package the application
           aws s3 cp app.zip s3://$S3_BUCKET_NAME/app.zip
 
-      # Step 8: Deploy to AWS Elastic Beanstalk
+      # Step 8: Deploy to AWS Elastic Beanstalk eeee
       - name: Deploy to Elastic Beanstalk
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
