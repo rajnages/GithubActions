@@ -16,7 +16,7 @@ jobs:
 
     # Step 2: Change to the application directory
     - name: Set application directory context
-      run: cd ./node-app
+      run: cd ./node
 
     # Step 3: Set up Node.js environment
     - name: Set up Node.js
@@ -27,20 +27,20 @@ jobs:
     # Step 4: Install dependencies
     - name: Install dependencies
       run: |
-        cd ./node-app
+        cd ./node
         npm install
 
     # Step 5: Run tests (if any)
     - name: Run tests
       run: |
-        cd ./node-app
+        cd ./node
         npm test
 
     # Step 6: Build the Docker image
     - name: Build Docker image
       run: |
-        cd ./node-app
-        docker build -t node-app .
+        cd ./node
+        docker build -t node .
 
     # Step 7: Deploy to AWS Elastic Beanstalk
     - name: Deploy to Elastic Beanstalk
@@ -49,12 +49,12 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: us-east-1
       run: |
-        cd ./node-app
+        cd ./node
         zip -r app.zip .
         aws elasticbeanstalk create-application-version \
-          --application-name "node-app" \
+          --application-name "node" \
           --version-label v1 \
           --source-bundle S3Bucket="elasticbeanstalk-apps",S3Key="app.zip"
         aws elasticbeanstalk update-environment \
-          --environment-name "node-app-env" \
+          --environment-name "node-env" \
           --version-label v1
