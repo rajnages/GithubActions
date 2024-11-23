@@ -14,43 +14,43 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Navigate to the application directory
-    - name: Navigate to application directory
-      working-directory: ./node-app
-      run: echo "Switched to the node-app directory."
+    # Step 2: Change to the application directory
+    - name: Set application directory context
+      run: cd /node-app
 
     # Step 3: Set up Node.js environment
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: 16
-      #working-directory: ./node-app
 
     # Step 4: Install dependencies
     - name: Install dependencies
-      working-directory: ./node-app
-      run: npm install
+      run: |
+        cd /node-app
+        npm install
 
     # Step 5: Run tests (if any)
     - name: Run tests
-      working-directory: ./node-app
-      run: npm test
+      run: |
+        cd /node-app
+        npm test
 
     # Step 6: Build the Docker image
     - name: Build Docker image
-      working-directory: ./node-app
       run: |
+        cd /node-app
         docker build -t node-app .
 
     # Step 7: Deploy to AWS Elastic Beanstalk
     - name: Deploy to Elastic Beanstalk
-      working-directory: ./node-app
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: us-east-1
       run: |
-        zip -r app.zip . # Package application
+        cd /node-app
+        zip -r app.zip .
         aws elasticbeanstalk create-application-version \
           --application-name "node-app" \
           --version-label v1 \
