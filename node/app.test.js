@@ -1,7 +1,5 @@
-// app.test.js
-
 const request = require("supertest");
-const app = require("./app"); // Import the app from app.js
+const { app, server } = require("./app"); // Import app and server from app.js
 
 describe("GET /", () => {
   it("responds with Hello message", async () => {
@@ -11,4 +9,8 @@ describe("GET /", () => {
       "Hello from Node.js deployed via GitHub Actions!"
     );
   });
+});
+
+afterAll(() => {
+  server.close(); // Close the server after tests
 });
