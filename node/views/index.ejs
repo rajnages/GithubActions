@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/scrollreveal"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1 class="title">Welcome to Node.js App</h1>
+      <p class="description">Deployed with GitHub Actions and hosted in the cloud!</p>
+      <button class="btn" onclick="launchRocket()">Launch Rocket</button>
+      <div class="rocket-icon">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/rocket.png" alt="rocket">
+      </div>
+    </div>
+    <div class="footer">
+      <p>Created with ❤️ by Rajavarapu Nageswarao</p>
+    </div>
+  </div>
+
+  <script>
+    // Rocket launch animation
+    function launchRocket() {
+      const rocketIcon = document.querySelector('.rocket-icon img');
+      rocketIcon.classList.add('launch');
+      setTimeout(() => {
+        rocketIcon.classList.remove('launch');
+      }, 1500);
+      alert("Rocket Launched!");
+    }
+
+    // Scroll reveal animations
+    ScrollReveal().reveal('.card', {
+      duration: 2000,
+      origin: 'bottom',
+      distance: '100px',
+      easing: 'ease-in-out',
+    });
+
+    ScrollReveal().reveal('.footer', {
+      duration: 1500,
+      origin: 'top',
+      distance: '30px',
+      easing: 'ease-in-out',
+      delay: 500
+    });
+
+    // Reveal Title and Description
+    ScrollReveal().reveal('.title', {
+      delay: 100,
+      duration: 2000,
+      origin: 'left',
+      distance: '50px',
+    });
+
+    ScrollReveal().reveal('.description', {
+      delay: 200,
+      duration: 2000,
+      origin: 'right',
+      distance: '50px',
+    });
+  </script>
+</body>
+</html>
