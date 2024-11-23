@@ -20,92 +20,56 @@ jobs:
         with:
           node-version: 16
 
-      # Step 3: Install AWS CLI and zip
-      - name: Install AWS CLI and zip
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y awscli zip
-
-      # Step 4: Install dependencies
+      # Step 3: Install dependencies
       - name: Install dependencies
         working-directory: ./node
         run: npm install
 
-      # Step 5: Run tests
+      # Step 4: Run tests
       - name: Run tests
         working-directory: ./node
         run: npm test
 
-      # Step 6: Build the Docker image
+      # Step 5: Build Docker image (optional, only if you want to use Docker)
       - name: Build Docker image
         working-directory: ./node
         run: docker build -t node-app .
 
-      # Step 7: Create S3 bucket and upload app.zip
-      - name: Create S3 bucket and upload app
-        working-directory: ./node
+      # Step 6: Deploy to EC2 instance
+      - name: Deploy to EC2
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-1
+          EC2_IP: ${{ secrets.EC2_IP }}
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         run: |
-          S3_BUCKET_NAME="elasticbeanstalk-apps-123"
-          if aws s3 ls "s3://$S3_BUCKET_NAME" 2>&1 | grep -q "NoSuchBucket"; then
-            echo "Creating S3 bucket: $S3_BUCKET_NAME"
-            aws s3api create-bucket --bucket $S3_BUCKET_NAME --region us-east-1 --create-bucket-configuration LocationConstraint=us-east-1
-          else
-            echo "Bucket $S3_BUCKET_NAME already exists."
-          fi
-          zip -r app.zip . # Package the application
-          aws s3 cp app.zip s3://$S3_BUCKET_NAME/app.zip
+          # Store the SSH private key to a file
+          echo "$EC2_SSH_PRIVATE_KEY" > private-key.pem
+          chmod 600 private-key.pem  # Set the correct permissions for the private key
 
-      # Step 8: Deploy to AWS Elastic Beanstalk eeee
-      - name: Deploy to Elastic Beanstalk
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-1
-        run: |
-          VERSION_LABEL=$(date +%s) # Timestamp for unique version
-          APP_NAME="node-app"
-          ENV_NAME="node"
-          S3_BUCKET_NAME="elasticbeanstalk-apps-123"
-          S3_KEY="app.zip"
+          # Connect to the EC2 instance using SSH and deploy the app
+          ssh -o StrictHostKeyChecking=no -i private-key.pem ubuntu@$EC2_IP << 'EOF'
+            # Update packages and install Node.js if not installed
+            sudo apt-get update -y
+            sudo apt-get install -y nodejs npm
 
-          # Validate S3 bucket and key
-          if ! aws s3 ls "s3://$S3_BUCKET_NAME/$S3_KEY" 2>&1 | grep -q "$S3_KEY"; then
-            echo "Error: S3 key $S3_KEY does not exist in bucket $S3_BUCKET_NAME."
-            exit 1
-          fi
+            # Navigate to the app directory (create it if it doesn't exist)
+            cd /home/ubuntu
+            mkdir -p node-app
+            cd node-app
 
-          # Check if application exists
-          if aws elasticbeanstalk describe-applications --application-names $APP_NAME 2>&1 | grep -q "ApplicationName"; then
-            echo "Application $APP_NAME already exists."
-          else
-            echo "Creating Elastic Beanstalk application: $APP_NAME"
-            aws elasticbeanstalk create-application --application-name $APP_NAME
-          fi
+            # Pull the latest changes from GitHub (you can set up a git repo or use scp to copy files)
+            git pull origin main
 
-          # Check if environment exists
-          if aws elasticbeanstalk describe-environments --environment-names $ENV_NAME 2>&1 | grep -q "EnvironmentName"; then
-            echo "Environment $ENV_NAME already exists."
-          else
-            echo "Creating Elastic Beanstalk environment: $ENV_NAME"
-            aws elasticbeanstalk create-environment \
-              --application-name $APP_NAME \
-              --environment-name $ENV_NAME \
-              --solution-stack-name "64bit Amazon Linux 2023 v6.4.0 running Node.js 20"
-          fi
+            # Install dependencies
+            npm install
 
-          # Create application version
-          echo "Creating application version $VERSION_LABEL"
-          aws elasticbeanstalk create-application-version \
-            --application-name $APP_NAME \
-            --version-label $VERSION_LABEL \
-            --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key=$S3_KEY
+            # Start the Node.js application
+            pm2 stop node-app || true  # Stop if the app is already running
+            pm2 start app.js --name "node-app"  # Replace app.js with your entry file name
 
-          # Update environment
-          echo "Updating environment $ENV_NAME with version $VERSION_LABEL"
-          aws elasticbeanstalk update-environment \
-            --environment-name $ENV_NAME \
-            --version-label $VERSION_LABEL
+            # Ensure pm2 restarts on reboot
+            pm2 startup
+            pm2 save
+          EOF
+
+          # Clean up
+          rm private-key.pem
