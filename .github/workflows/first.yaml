@@ -38,8 +38,8 @@ jobs:
       # Step 6: Deploy to EC2 instance
       - name: Deploy to EC2
         env:
-          EC2_IP: ${{ secrets.EC2_IP }}
-          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_IP: ${{ secrets.EC2_IP }} # EC2 public IP or DNS
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }} # SSH private key stored in GitHub Secrets
         run: |
           # Store the SSH private key to a file
           echo "$EC2_SSH_PRIVATE_KEY" > private-key.pem
@@ -47,29 +47,30 @@ jobs:
 
           # Connect to the EC2 instance using SSH and deploy the app
           ssh -o StrictHostKeyChecking=no -i private-key.pem ubuntu@$EC2_IP << 'EOF'
-            # Update packages and install Node.js if not installed
+            # Update packages and install Node.js, npm, and pm2 if not installed
             sudo apt-get update -y
             sudo apt-get install -y nodejs npm
+            sudo npm install -g pm2  # Install pm2 globally for process management
 
             # Navigate to the app directory (create it if it doesn't exist)
             cd /home/ubuntu
             mkdir -p node-app
             cd node-app
 
-            # Pull the latest changes from GitHub (you can set up a git repo or use scp to copy files)
-            git pull origin main
+            # Pull the latest changes from GitHub (assuming Git is installed)
+            git pull origin main || git clone https://github.com/rajnages/GithubActions.git .  # Adjust the repo URL
 
             # Install dependencies
-            npm install
+            cd node && npm install
 
-            # Start the Node.js application
+            # Stop the previous app if running
             pm2 stop node-app || true  # Stop if the app is already running
             pm2 start app.js --name "node-app"  # Replace app.js with your entry file name
 
-            # Ensure pm2 restarts on reboot
+            # Ensure pm2 restarts the app on reboot
             pm2 startup
             pm2 save
           EOF
 
-          # Clean up
+          # Clean up private key after SSH connection
           rm private-key.pem
