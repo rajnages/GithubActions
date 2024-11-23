@@ -68,7 +68,7 @@ jobs:
         run: |
           VERSION_LABEL=$(date +%s) # Timestamp for unique version
           APP_NAME="node-app"
-          ENV_NAME="node-env"
+          ENV_NAME="node"
           S3_BUCKET_NAME="elasticbeanstalk-apps-123"
           S3_KEY="app.zip"
 
