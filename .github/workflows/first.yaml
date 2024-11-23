@@ -30,12 +30,23 @@ jobs:
         working-directory: ./node
         run: npm test
 
-      # Step 5: Build Docker image (optional, only if you want to use Docker)
+      # Step 5: Build Docker image
       - name: Build Docker image
         working-directory: ./node
         run: docker build -t node-app .
 
-      # Step 6: Deploy to EC2 instance
+      # Step 6: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Step 7: Push Docker image to Docker Hub
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/node-app:v1
+
+      # Step 8: Deploy to EC2 instance
       - name: Deploy to EC2
         env:
           EC2_IP: ${{ secrets.EC2_IP }} # EC2 public IP or DNS
@@ -47,25 +58,26 @@ jobs:
 
           # Connect to the EC2 instance using SSH and deploy the app
           ssh -o StrictHostKeyChecking=no -i private-key.pem ubuntu@$EC2_IP << 'EOF'
-            # Update packages and install Node.js, npm, and pm2 if not installed
+            # Update packages and install Docker and pm2 if not installed
             sudo apt-get update -y
-            sudo apt-get install -y nodejs npm
+            sudo apt-get install -y docker.io
             sudo npm install -g pm2  # Install pm2 globally for process management
 
-            # Navigate to the app directory (create it if it doesn't exist)
-            cd /home/ubuntu
+            # # Pull the latest Docker image from Docker Hub
+            # sudo docker pull ${{ secrets.DOCKER_USERNAME }}/node-app:latest
 
-            # Pull the latest changes from GitHub (assuming Git is installed)
-            git pull origin main || git clone https://github.com/rajnages/GithubActions.git .  # Adjust the repo URL
+            # # Run the Docker container
+            # sudo docker run -d --name node-app -p 80:3000 ${{ secrets.DOCKER_USERNAME }}/node-app:latest
+            
+            git clone https://github.com/rajnages/GithubActions.git
 
-            # Install dependencies
             cd GithubActions && cd node && npm install
 
             # Stop the previous app if running
             pm2 stop node || true  # Stop if the app is already running
             pm2 start app.js --name "node"  # Replace app.js with your entry file name
 
-            # Ensure pm2 restarts the app on reboot
+            # Ensure pm2 restarts the app on reboot (if needed, though Docker should handle it)
             pm2 startup
             pm2 save
           EOF

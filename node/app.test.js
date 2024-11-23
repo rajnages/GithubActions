@@ -1,12 +1,13 @@
 const request = require("supertest");
-const { app, server } = require("./app"); // Import app and server from app.js
+const { app, server } = require("./app");
 
 describe("GET /", () => {
-  it("responds with Hello message", async () => {
+  it("responds with HTML content", async () => {
     const response = await request(app).get("/");
     expect(response.statusCode).toBe(200);
-    expect(response.text).toBe(
-      "Hello from Node.js deployed via GitHub Actions!"
+    expect(response.text).toContain("Welcome to Node.js App"); // Check for the rendered HTML content
+    expect(response.text).toContain(
+      "Deployed with GitHub Actions and hosted in the cloud!"
     );
   });
 });

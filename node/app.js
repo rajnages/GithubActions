@@ -5,16 +5,16 @@ const app = express();
 // Set EJS as the view engine
 app.set("view engine", "ejs");
 
-// Step 1: Serve the homepage with dynamic data
+// Serve the homepage with dynamic data rendered via EJS
 app.get("/", (req, res) => {
   const greeting = "Hello from Node.js deployed via GitHub Actions!";
-  res.render("index", { greeting });
+  res.render("index", { greeting }); // Use EJS to render the HTML with dynamic data
 });
 
-// Step 2: Serve static files (for CSS, images, etc.)
+// Serve static files (for CSS, images, etc.)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Step 3: Start the server
+// Start the server
 const server = app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
