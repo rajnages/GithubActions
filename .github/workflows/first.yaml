@@ -54,8 +54,6 @@ jobs:
 
             # Navigate to the app directory (create it if it doesn't exist)
             cd /home/ubuntu
-            mkdir -p node-app
-            cd node-app
 
             # Pull the latest changes from GitHub (assuming Git is installed)
             git pull origin main || git clone https://github.com/rajnages/GithubActions.git .  # Adjust the repo URL
@@ -64,8 +62,8 @@ jobs:
             cd GithubActions && cd node && npm install
 
             # Stop the previous app if running
-            pm2 stop node-app || true  # Stop if the app is already running
-            pm2 start app.js --name "node-app"  # Replace app.js with your entry file name
+            pm2 stop node || true  # Stop if the app is already running
+            pm2 start app.js --name "node"  # Replace app.js with your entry file name
 
             # Ensure pm2 restarts the app on reboot
             pm2 startup
