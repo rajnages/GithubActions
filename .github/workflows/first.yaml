@@ -1,0 +1,60 @@
+name: CI/CD Pipeline for Node.js App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Navigate to the application directory
+    - name: Navigate to application directory
+      working-directory: ./node-app
+      run: echo "Switched to the node-app directory."
+
+    # Step 3: Set up Node.js environment
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+      #working-directory: ./node-app
+
+    # Step 4: Install dependencies
+    - name: Install dependencies
+      working-directory: ./node-app
+      run: npm install
+
+    # Step 5: Run tests (if any)
+    - name: Run tests
+      working-directory: ./node-app
+      run: npm test
+
+    # Step 6: Build the Docker image
+    - name: Build Docker image
+      working-directory: ./node-app
+      run: |
+        docker build -t node-app .
+
+    # Step 7: Deploy to AWS Elastic Beanstalk
+    - name: Deploy to Elastic Beanstalk
+      working-directory: ./node-app
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
+      run: |
+        zip -r app.zip . # Package application
+        aws elasticbeanstalk create-application-version \
+          --application-name "node-app" \
+          --version-label v1 \
+          --source-bundle S3Bucket="elasticbeanstalk-apps",S3Key="app.zip"
+        aws elasticbeanstalk update-environment \
+          --environment-name "node-app-env" \
+          --version-label v1
