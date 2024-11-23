@@ -14,33 +14,37 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Change to the application directory
-    - name: Set application directory context
-      run: cd ./node
-
-    # Step 3: Set up Node.js environment
+    # Step 2: Set up Node.js environment
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: 16
 
-    # Step 4: Install dependencies
+    # Step 3: Install dependencies
     - name: Install dependencies
-      run: |
-        cd ./node
-        npm install
+      working-directory: ./node
+      run: npm install
 
-    # Step 5: Run tests (if any)
+    # Step 4: Run tests (if any)
     - name: Run tests
-      run: |
-        cd ./node
-        npm test
+      working-directory: ./node
+      run: npm test
 
-    # Step 6: Build the Docker image
+    # Step 5: Build the Docker image
     - name: Build Docker image
+      working-directory: ./node
+      run: docker build -t node-app .
+
+    # Step 6: Upload application to S3
+    - name: Upload app to S3
+      working-directory: ./node
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
       run: |
-        cd ./node
-        docker build -t node .
+        zip -r app.zip . # Package the application
+        aws s3 cp app.zip s3://elasticbeanstalk-apps-123/app.zip
 
     # Step 7: Deploy to AWS Elastic Beanstalk
     - name: Deploy to Elastic Beanstalk
@@ -49,12 +53,10 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: us-east-1
       run: |
-        cd ./node
-        zip -r app.zip .
         aws elasticbeanstalk create-application-version \
-          --application-name "node" \
+          --application-name "node-app" \
           --version-label v1 \
-          --source-bundle S3Bucket="elasticbeanstalk-apps-123"
+          --source-bundle S3Bucket="elasticbeanstalk-apps-123",S3Key="app.zip"
         aws elasticbeanstalk update-environment \
           --environment-name "node-env" \
           --version-label v1
