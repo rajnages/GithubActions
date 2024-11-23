@@ -61,7 +61,7 @@ jobs:
             git pull origin main || git clone https://github.com/rajnages/GithubActions.git .  # Adjust the repo URL
 
             # Install dependencies
-            cd node && npm install
+            cd GithubActions && cd node && npm install
 
             # Stop the previous app if running
             pm2 stop node-app || true  # Stop if the app is already running
